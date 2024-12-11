@@ -68,8 +68,8 @@ def test_config_ok_show_tasks(
     result = runner.invoke(app)
     assert result.exit_code == 0
     assert "Hello Test name! It's 14 Jan | 03:21 AM" in result.stdout
-    assert 'ID   TASK     STATUS' in result.stdout
-    assert '1    Task 1     ○' in result.stdout
+    assert 'ID   CATEGORY   TASK     STATUS' in result.stdout
+    assert '1               Task 1     ○' in result.stdout
 
 
 @freeze_time('2022-01-14 03:21:34')
@@ -124,9 +124,37 @@ def test_add_task(
     result = runner.invoke(app, ['add', 'New task'])
     assert result.exit_code == 0
     assert 'Added "New task" to the list' in result.stdout
-    assert 'ID   TASK       STATUS' in result.stdout
-    assert '1    Task 1       ✓' in result.stdout
-    assert '2    New task     ○' in result.stdout
+    assert 'ID   CATEGORY   TASK       STATUS' in result.stdout
+    assert '1               Task 1       ✓' in result.stdout
+    assert '2               New task     ○' in result.stdout
+
+
+@patch(
+    'pls_cli.utils.settings.Settings.get_settings',
+    return_value={
+        'user_name': 'Test name',
+        'initial_setup_done': True,
+        'tasks': [{'name': 'Task 1', 'category': 'Later', 'done': False}],
+    },
+)
+@patch('pls_cli.utils.settings.Settings.write_settings')
+@patch('pls_cli.utils.settings.Settings.all_tasks_done', return_value=False)
+@patch(
+    'pls_cli.utils.settings.Settings.get_tasks',
+    return_value=[
+        {'name': 'Task 1', 'category': 'Later', 'done': True},
+        {'name': 'New task', 'category': 'Now', 'done': False},
+    ],
+)
+def test_add_task_with_category(
+    mock_get_tasks, mock_all_tasks_done, mock_write_settings, mock_get_settings
+):
+    result = runner.invoke(app, ['add', 'New task'])
+    assert result.exit_code == 0
+    assert 'Added "New task" to the list' in result.stdout
+    assert 'ID   CATEGORY   TASK       STATUS' in result.stdout
+    assert '1       Later   Task 1       ✓' in result.stdout
+    assert '2         Now   New task     ○' in result.stdout
 
 
 @patch(
@@ -178,9 +206,32 @@ def test_edit_task_success(mock_write_settings, mock_get_settings):
     assert 'Old Task: Old task text' in output
     assert 'Edited Task: New task text' in output
     assert 'Are you sure you want to edit Task #2? [y/N]: y' in output
-    assert '1    Task 1            ○' in output
-    assert '2    New task text     ○' in output
+    assert '1               Task 1            ○' in output
+    assert '2               New task text     ○' in output
 
+
+@patch(
+    'pls_cli.utils.settings.Settings.get_settings',
+    return_value={
+        'user_name': 'Test name',
+        'initial_setup_done': True,
+        'tasks': [
+            {'name': 'Task 1', 'category': 'Super Important', 'done': False},
+            {'name': 'Old task text', 'category': 'Secret Project', 'done': False},
+        ],
+    },
+)
+@patch('pls_cli.utils.settings.Settings.write_settings')
+def test_edit_task_with_categories_success(mock_write_settings, mock_get_settings):
+    result = runner.invoke(app, ['edit', '2', 'New task text'], input='y')
+    output = result.stdout
+    assert result.exit_code == 0
+    print('Results:', result.stdout)
+    assert 'Old Task: Old task text' in output
+    assert 'Edited Task: New task text' in output
+    assert 'Are you sure you want to edit Task #2? [y/N]: y' in output
+    assert '1    Super Important   Task 1            ○' in output
+    assert '2     Secret Project   New task text     ○' in output
 
 @patch(
     'pls_cli.utils.settings.Settings.get_settings',
@@ -201,8 +252,8 @@ def test_edit_task_aborted(mock_write_settings, mock_get_settings):
     assert 'Old Task: Task 2' in output
     assert 'Edited Task: Task 2 edited' in output
     assert 'Are you sure you want to edit Task #2? [y/N]: N' in output
-    assert '1    Task 1            ○' in output
-    assert '2    Task 2 edited     ○' in output
+    assert '1               Task 1            ○' in output
+    assert '2               Task 2 edited     ○' in output
 
 
 @patch(
@@ -219,3 +270,5 @@ def test_edit_empty_tasks(mock_write_settings, mock_get_settings):
     output = result.stdout
     assert result.exit_code == 0
     assert 'Currently, you have no tasks to edit 📝' in output
+
+
