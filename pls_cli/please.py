@@ -192,7 +192,7 @@ def print_tasks(force_print: bool = False) -> None:
 
 @app.command()
 def add(task_input: str) -> None:
-    """[d][[Optional Category]][/] [bold green]Add[/bold green] a Task :sparkles: [light_slate_grey italic](Add task name inside quotes)[/]"""
+    """[d][[Category]][/] [bold green]Add[/bold green] a Task :sparkles: [light_slate_grey italic](Add task name and category inside quotes)[/]"""
 
     task, category = get_task_and_category(task_input)
     new_task = {'name': task, 'done': False, 'category': category}

@@ -19,13 +19,16 @@ pls --help
 │ --help                        Show this message and exit.                    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ add          Add a Task ✨ (Add task name inside quotes)                     │
+│ add          [[Category]] Add a Task ✨ (Add task name and category          │
+│              inside quotes)                                                  │
 │ clean        Clean up tasks marked as done 🧹                                │
 │ clear        Clear all tasks 🗑                                              │
+│                                                                              │
 │ del          Delete a Task                                                   │
 │ delete       Delete a Task                                    (deprecated)   │
 │ done         Mark a task as done ✓                                           │
-│ edit         Edit a task by id ✏️  (Add task name inside quotes)              │
+│ edit         Edit a task by id ✏️  (Add task name inside quotes)             │
+│                                                                              │
 │ move         Change task order 🔀                                            │
 │ showtasks    Show all Tasks 📖                                (deprecated)   │
 │ tasks        Show all Tasks 📖                                               │
@@ -36,6 +39,7 @@ pls --help
 │ config         Launch config directory 📂                                    │
 │ docs           Launch docs Website 🌐                                        │
 │ quotes         Show quotes 🏷                                                │
+│                                                                              │
 │ tasks-progress Show tasks progress 🎯                                        │
 │ setup          Reset all data and run setup 🔧                               │
 │ version        Show version 🔖                                               │
