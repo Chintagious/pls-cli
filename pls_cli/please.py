@@ -1,8 +1,9 @@
 import datetime
 import json
 import os
+import re
 import shutil
-from typing import Union
+from typing import Union, Optional, Tuple
 
 import typer
 from rich import box
@@ -39,7 +40,10 @@ insert_or_delete_text_style = os.getenv(
 msg_pending_style = os.getenv('PLS_MSG_PENDING_STYLE', '#61E294')
 table_header_style = os.getenv('PLS_TABLE_HEADER_STYLE', '#d77dd8')
 task_done_style = os.getenv('PLS_TASK_DONE_STYLE', '#a0a0a0')
+task_category_done_style = os.getenv('PLS_TASK_CATEGORY_DONE_STYLE', '#a0a0a0')
 task_pending_style = os.getenv('PLS_TASK_PENDING_STYLE', '#bb93f2')
+task_category_pending_style = os.getenv('PLS_TASK_CATEGORY_PENDING_STYLE', '#bb93f2')
+# task_category_pending_style = os.getenv('PLS_TASK_CATEGORY_PENDING_STYLE', '#91d9e5')
 header_greetings_style = os.getenv('PLS_HEADER_GREETINGS_STYLE', '#FFBF00')
 quote_style = os.getenv('PLS_QUOTE_STYLE', '#a0a0a0')
 author_style = os.getenv('PLS_AUTHOR_STYLE', '#a0a0a0')
@@ -142,6 +146,7 @@ def showtasks() -> None:
     )
 
     task_table.add_column('ID', justify='center')
+    task_table.add_column('CATEGORY', justify='right')
     task_table.add_column('TASK')
     task_table.add_column('STATUS', justify='center')
 
@@ -150,12 +155,24 @@ def showtasks() -> None:
             task_name = f'[{task_done_style}][s]{task["name"]}[/][/]'
             task_status = '[#bbf2b3]✓[/]'
             task_id = f'[{task_done_style}][s]{str(index + 1)}[/][/]'
+            if 'category' in task:
+                task_category = f'[{task_category_done_style}][s][i][d]{task["category"]}[/][/][/][/]'
+            else:
+                task_category = ''
         else:
             task_name = f'[{task_pending_style}]{task["name"]}[/]'
             task_status = f'[{task_pending_style}]○[/]'
             task_id = f'[{task_pending_style}]{str(index + 1)}[/]'
+            if 'category' in task:
+                task_category = f'[{task_category_pending_style}][i][d]{task["category"]}[/][/][/]'
+            else:
+                task_category = ''
 
-        task_table.add_row(task_id, task_name, task_status)
+        task_table.add_row(
+            task_id
+            , task_category
+            , task_name
+            , task_status)
     center_print(task_table)
 
     if Settings().all_tasks_done():
@@ -174,9 +191,11 @@ def print_tasks(force_print: bool = False) -> None:
 
 
 @app.command()
-def add(task: str) -> None:
-    """[bold green]Add[/bold green] a Task :sparkles: [light_slate_grey italic](Add task name inside quotes)[/]"""
-    new_task = {'name': task, 'done': False}
+def add(task_input: str) -> None:
+    """[d][[Optional Category]][/] [bold green]Add[/bold green] a Task :sparkles: [light_slate_grey italic](Add task name inside quotes)[/]"""
+
+    task, category = get_task_and_category(task_input)
+    new_task = {'name': task, 'done': False, 'category': category}
     settings = Settings().get_settings()
     settings['tasks'].append(new_task)
     Settings().write_settings(settings)
@@ -187,10 +206,24 @@ def add(task: str) -> None:
     print_tasks()
 
 
+def get_task_and_category(string_check: str) -> Tuple[str, str]:
+    # To define a category, the task input string must start with `[[` and end with `]]`
+    category_check_pattern = r'^\[\[(.+)\]\]s*'
+    category_match = re.match(category_check_pattern, string_check)
+
+    category = ''
+    task = string_check
+    if category_match:
+        category = category_match.group(1)
+        # Remove the matched part from the original string, and trim to remove whitespace
+        task = re.sub(category_check_pattern, '', string_check, 1).strip()
+
+    return task, category
+
 @app.command()
-def done(taks_id: int) -> None:
+def done(task_id: int) -> None:
     """Mark a task as [#bbf2b3]done ✓[/]"""
-    task_id = taks_id - 1
+    task_id = task_id - 1
     settings = Settings().get_settings()
     if not settings['tasks']:
         center_print(
@@ -282,7 +315,7 @@ def undone(task_id: int) -> None:
 
 
 @app.command('del', short_help='[bright_red]Delete[/] a Task')
-@app.command(short_help='[s]Delete a Task[/s]', deprecated=True)
+@app.command(short_help='[s]Delete a Task[/]', deprecated=True)
 def delete(task_id: int) -> None:
     """[bright_red]Delete[/] a Task"""
     task_id = task_id - 1
@@ -522,7 +555,7 @@ def show(ctx: typer.Context) -> None:
             if Settings().exists_settings():
                 date_now = datetime.datetime.now()
                 user_name = Settings().get_name()
-                header_greetings = f'[{header_greetings_style}] Hello {user_name}! It\'s {date_now.strftime("%d %b | %I:%M %p")}[/]'
+                header_greetings = f'[{header_greetings_style}] [i]Hello[/i] {user_name}! It\'s {date_now.strftime("%d %b | %I:%M %p")}[/]'
                 center_print(
                     Rule(header_greetings, style=header_greetings_style)
                 )
